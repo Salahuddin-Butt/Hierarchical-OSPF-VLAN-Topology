@@ -1,0 +1,157 @@
+! --- 1. BASIC SETUP & ROUTING ---
+hostname MLS0
+ip routing
+service password-encryption
+enable secret cisco123
+
+! --- 2. CREATE VLANS ---
+vlan 10,20,30,40,50,60,70,80
+exit
+
+! --- 3. CONFIGURE GATEWAY INTERFACES (SVI) ---
+interface Vlan10
+ ip address 192.168.0.1 255.255.252.0
+ no shutdown
+exit
+interface Vlan20
+ ip address 192.168.4.1 255.255.252.0
+ no shutdown
+exit
+interface Vlan30
+ ip address 192.168.8.1 255.255.252.0
+ no shutdown
+exit
+interface Vlan40
+ ip address 192.168.12.1 255.255.252.0
+ no shutdown
+exit
+interface Vlan50
+ ip address 192.168.16.1 255.255.252.0
+ no shutdown
+exit
+interface Vlan60
+ ip address 192.168.20.1 255.255.252.0
+ no shutdown
+exit
+interface Vlan70
+ ip address 192.168.24.1 255.255.252.0
+ no shutdown
+exit
+interface Vlan80
+ ip address 192.168.28.1 255.255.252.0
+ no shutdown
+exit
+
+! --- 4. CONFIGURE UPLINK TO ROUTER 4 ---
+interface FastEthernet0/1
+ no switchport
+ ip address 10.0.0.10 255.255.255.252
+ no shutdown
+exit
+
+! --- 5. DHCP POOLS ---
+ip dhcp pool V10_POOL
+ network 192.168.0.0 255.255.252.0
+ default-router 192.168.0.1
+ dns-server 8.8.8.8
+exit
+ip dhcp pool V20_POOL
+ network 192.168.4.0 255.255.252.0
+ default-router 192.168.4.1
+exit
+ip dhcp pool V30_POOL
+ network 192.168.8.0 255.255.252.0
+ default-router 192.168.8.1
+exit
+ip dhcp pool V40_POOL
+ network 192.168.12.0 255.255.252.0
+ default-router 192.168.12.1
+exit
+ip dhcp pool V50_POOL
+ network 192.168.16.0 255.255.252.0
+ default-router 192.168.16.1
+exit
+ip dhcp pool V60_POOL
+ network 192.168.20.0 255.255.252.0
+ default-router 192.168.20.1
+exit
+ip dhcp pool V70_POOL
+ network 192.168.24.0 255.255.252.0
+ default-router 192.168.24.1
+exit
+ip dhcp pool V80_POOL
+ network 192.168.28.0 255.255.252.0
+ default-router 192.168.28.1
+exit
+
+! --- 6. OSPF ROUTING ---
+router ospf 1
+ log-adjacency-changes
+ network 10.0.0.8 0.0.0.3 area 0
+ network 192.168.0.0 0.0.3.255 area 0
+ network 192.168.4.0 0.0.3.255 area 0
+ network 192.168.8.0 0.0.3.255 area 0
+ network 192.168.12.0 0.0.3.255 area 0
+ network 192.168.16.0 0.0.3.255 area 0
+ network 192.168.20.0 0.0.3.255 area 0
+ network 192.168.24.0 0.0.3.255 area 0
+ network 192.168.28.0 0.0.3.255 area 0
+exit
+
+! --- 7. ACCESS CONTROL LISTS (ACLs) ---
+ip access-list extended ACL_GROUP_A
+ deny ip any 192.168.16.0 0.0.7.255
+ deny ip any 192.168.24.0 0.0.7.255
+ permit tcp any 192.168.32.0 0.0.3.255 established
+ permit icmp any 192.168.32.0 0.0.3.255 echo-reply
+ deny ip any 192.168.32.0 0.0.3.255
+ permit ip any any
+exit
+
+ip access-list extended ACL_GROUP_B
+ deny ip any 192.168.0.0 0.0.15.255
+ deny ip any 192.168.24.0 0.0.7.255
+ permit tcp any 192.168.32.0 0.0.3.255 established
+ permit icmp any 192.168.32.0 0.0.3.255 echo-reply
+ deny ip any 192.168.32.0 0.0.3.255
+ permit ip any any
+exit
+
+ip access-list extended ACL_GROUP_C
+ deny ip any 192.168.0.0 0.0.15.255
+ deny ip any 192.168.16.0 0.0.7.255
+ permit tcp any 192.168.32.0 0.0.3.255 established
+ permit icmp any 192.168.32.0 0.0.3.255 echo-reply
+ deny ip any 192.168.32.0 0.0.3.255
+ permit ip any any
+exit
+
+! --- 8. APPLY ACLs (Safe Mode - No Ranges) ---
+interface Vlan10
+ ip access-group ACL_GROUP_A in
+exit
+interface Vlan20
+ ip access-group ACL_GROUP_A in
+exit
+interface Vlan30
+ ip access-group ACL_GROUP_A in
+exit
+interface Vlan40
+ ip access-group ACL_GROUP_A in
+exit
+interface Vlan50
+ ip access-group ACL_GROUP_B in
+exit
+interface Vlan60
+ ip access-group ACL_GROUP_B in
+exit
+interface Vlan70
+ ip access-group ACL_GROUP_C in
+exit
+interface Vlan80
+ ip access-group ACL_GROUP_C in
+exit
+
+! --- 9. SAVE ---
+end
+write memory
